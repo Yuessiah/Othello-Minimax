@@ -47,6 +47,7 @@ class Game(object):
     def show_info(self):
         """ Prints game information to stdout.
         """
+        self.player = self.ctrlers[0].get_colour()
         print("Playing as:       " + self.player)
         print("Current turn:     " + str(self.ctrlers[0]))
         print("Number of Black:  " + str(
@@ -58,7 +59,6 @@ class Game(object):
     def show_board(self):
         """ Prints the current state of the board to stdout.
         """
-        self.player = self.ctrlers[0].get_colour()
         self.board.mark_moves(self.player)
         print(self.board.draw())
 
