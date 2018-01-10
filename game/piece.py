@@ -21,6 +21,7 @@ class Piece(object):
             "BOARD": self.draw_board,
             "MOVE": self.draw_move}
 
+
     def draw(self):
         """ Returns a string representation of the piece in its current state.
         """
@@ -29,6 +30,7 @@ class Piece(object):
             result = self.drawing[self.state]()
 
         return result
+
 
     def draw_white(self):
         """ Returns a string representation of a white piece.
@@ -44,6 +46,7 @@ class Piece(object):
 
             return 'WW'
 
+
     def draw_black(self):
         """ Returns a string representation of a black piece.
         """
@@ -57,6 +60,7 @@ class Piece(object):
 
             return 'BB'
 
+
     def draw_board(self):
         """ Returns a string representation of a board piece.
         """
@@ -64,6 +68,7 @@ class Piece(object):
             return clr.format_color('  ', bg=clr.rgb(0, 3, 0))
         else:
             return '..'
+
 
     def draw_move(self):
         """ Returns a string representation of a move piece.
@@ -73,30 +78,36 @@ class Piece(object):
 
         return 'MM'
 
+
     def set_black(self):
         """ Sets a piece's state to be BLACK.
         """
         self.state = 'BLACK'
+
 
     def set_white(self):
         """ Sets a piece's state to be WHITE.
         """
         self.state = 'WHITE'
 
+
     def set_move(self):
         """ Sets a piece's state to be MOVE.
         """
         self.state = MOVE
+
 
     def set_board(self):
         """ Sets the piece's state to be BOARD.
         """
         self.state = BOARD
 
+
     def get_state(self):
         """ Returns the piece's current state.
         """
         return self.state
+
 
     def flip(self):
         """ Flips a piece from WHITE<->BLACK and marks it as flipped.
@@ -111,25 +122,30 @@ class Piece(object):
 
         self.flipped = True
 
+
     def set_flipped(self):
         """ Sets the piece to flipped.
         """
         self.flipped = True
+
 
     def reset_flipped(self):
         """ Sets the piece to not be flipped.
         """
         self.flipped = False
 
+
     def is_flipped(self):
         """ Returns True if the piece is flipped, otherwise False.
         """
         return self.flipped
 
+
     def get_position(self):
         """ Returns the piece's coordinates as an (x, y).
         """
         return self.x, self.y
+
 
     def __repr__(self):
         return '({0},{1})'.format(self.x, self.y)

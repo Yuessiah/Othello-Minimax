@@ -23,11 +23,13 @@ class AlphaBetaPruner(object):
             if first_player == WHITE else (self.black, self.white)
         self.state = self.make_state(pieces)
 
+
     def make_state(self, pieces):
         """ Returns a tuple in the form of "current_state", that is: (current_player, state).
         """
         results = {BOARD: self.board, MOVE: self.board, WHITE: self.white, BLACK: self.black}
         return self.first_player, [results[p.get_state()] for p in pieces]
+
 
     def alpha_beta_search(self):
         """ Returns a valid action for the AI.
@@ -44,6 +46,7 @@ class AlphaBetaPruner(object):
             raise NoMovesError
 
         return max(moves, key=maxfn)[1]
+
 
     def max_value(self, depth, current_state, alpha, beta):
         """ Calculates the best possible move for the AI.
@@ -62,6 +65,7 @@ class AlphaBetaPruner(object):
 
         return value
 
+
     def min_value(self, depth, state, alpha, beta):
         """ Calculates the best possible move for the player.
         """
@@ -78,6 +82,7 @@ class AlphaBetaPruner(object):
             beta = min([beta, value])
 
         return value
+
 
     def evaluation(self, current_state, player_to_check):
         """ Returns a positive value when the player wins.
@@ -122,6 +127,7 @@ class AlphaBetaPruner(object):
 
         return eval
 
+
     def actions(self, current_state):
         """ Returns a list of tuples as coordinates for the valid moves for the current player.
         """
@@ -129,10 +135,12 @@ class AlphaBetaPruner(object):
         player, state = tmp_state
         return self.get_moves(player, self.opponent(player), state)
 
+
     def opponent(self, player):
         """ Returns the opponent of the specified player.
         """
         return self.second_player if player is self.first_player else self.first_player
+
 
     def next_state(self, current_state, action):
         """ Returns the next state in the form of a "current_state" tuple, (current_player, state).
@@ -156,6 +164,7 @@ class AlphaBetaPruner(object):
                     break
 
         return opponent, state
+
 
     def get_moves(self, player, opponent, state):
         """ Returns a generator of (x,y) coordinates.
@@ -188,6 +197,7 @@ class AlphaBetaPruner(object):
                 return True, int(tile % WIDTH), int(tile / HEIGHT), tile
 
         return False, int(tile % WIDTH), int(tile / HEIGHT), tile
+
 
     def cutoff_test(self, state, depth):
         """ Returns True when the cutoff limit has been reached.

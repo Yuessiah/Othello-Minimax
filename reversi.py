@@ -11,7 +11,6 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--timeout', help="Number of seconds the brain is allowed to think before making its move",
                         type=int, default=1)
-    parser.add_argument('--display-moves', help="Whether legal moves should be displayed or not", action='store_true')
     parser.add_argument('--text', help="Display the game in text mode", action='store_false')
     parser.add_argument('--player', help="Player first", action='store_true')
     parser.add_argument('--ai', help="AI first", action='store_true')
@@ -31,7 +30,6 @@ def main():
         players = ['ai', 'random']
 
     game = Game(timeout=args.timeout,
-                display_moves=args.display_moves,
                 colour=args.text,
                 players=players)
     game.run()

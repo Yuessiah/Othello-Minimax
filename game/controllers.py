@@ -19,6 +19,7 @@ class Controller(object):
         """
         pass
 
+
     def get_colour(self):
         """ Returns the colour of the controller.
         """
@@ -31,6 +32,7 @@ class PlayerController(Controller):
 
     def __init__(self, colour):
         self.colour = colour
+
 
     def next_move(self, board):
         """ Will return a single valid move as an (x, y) tuple.
@@ -66,16 +68,20 @@ class PlayerController(Controller):
 
         return result
 
+
     def get_colour(self):
         """ Returns the colour of the controller.
         """
         return self.colour
 
+
     def __str__(self):
         return "Player"
 
+
     def __repr__(self):
         return "PlayerController"
+
 
     @staticmethod
     def _parse_coordinates(x, y):
@@ -94,9 +100,10 @@ class AiController(Controller):
     """
 
     def __init__(self, id, colour, duration):
-        self.id = id
+        self.id = str(id)
         self.colour = colour
         self.duration = duration
+
 
     def next_move(self, board):
         """ Will return a single valid move as an (x, y) tuple.
@@ -136,13 +143,16 @@ class AiController(Controller):
 
         return workQueue.get()
 
+
     def get_colour(self):
         """ Returns the colour of the controller.
         """
         return self.colour
 
+
     def __str__(self):
         return "Ai"
+
 
     def __repr__(self):
         return "AiController[" + self.id + "]"

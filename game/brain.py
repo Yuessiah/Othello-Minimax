@@ -17,6 +17,7 @@ class Brain(threading.Thread):
         self.lifetime = None
         threading.Thread.__init__(self)
 
+
     def run(self):
         """ Starts the Minimax algorithm with the Alpha-Beta Pruning optimization
             and puts the result in a queue once done.

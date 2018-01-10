@@ -10,20 +10,25 @@ class RandomController(Controller):
         self.colour = colour
         self.history = []
 
+
     def next_move(self, board):
         """ Will return a single valid move as an (x, y) tuple.
         """
         found_moves = [p.get_position() for p in board.get_move_pieces(self.get_colour())]
         return random.choice(found_moves)
 
+
     def get_colour(self):
         return self.colour
+
 
     def end_game(self, result):
         pass
 
+
     def __str__(self):
         return "Random"
+
 
     def __repr__(self):
         return "RandomController"
