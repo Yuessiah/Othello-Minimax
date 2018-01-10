@@ -9,12 +9,12 @@ def main():
     """
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('--timeout', help="Number of seconds the brain is allowed to think before making its move.",
+    parser.add_argument('--timeout', help="Number of seconds the brain is allowed to think before making its move",
                         type=int, default=1)
-    parser.add_argument('--display-moves', help="Whether legal moves should be displayed or not.", action='store_true')
-    parser.add_argument('--colour', help="Display the game in 256 colours.", action='store_true')
-    parser.add_argument('--player', help="If you want to play against the ai", action='store_true')
-    parser.add_argument('--ai', help="If you want the ais to play against each other", action='store_true')
+    parser.add_argument('--display-moves', help="Whether legal moves should be displayed or not", action='store_true')
+    parser.add_argument('--text', help="Display the game in text mode", action='store_false')
+    parser.add_argument('--player', help="Player first", action='store_true')
+    parser.add_argument('--ai', help="AI first", action='store_true')
     parser.add_argument('--verify', help="Verify AI using a random player", action='store_true')
 
     args = parser.parse_args()
@@ -22,19 +22,17 @@ def main():
     if args.timeout < 0:
         exit()
 
-    players=[]
+    players=['player', 'player']
     if args.player:
         players = ['player', 'ai']
     if args.ai:
-        players = ['ai', 'ai']
+        players = ['ai', 'player']
     elif args.verify:
         players = ['ai', 'random']
-    if not players:
-        players = ['player', 'ai']
 
     game = Game(timeout=args.timeout,
                 display_moves=args.display_moves,
-                colour=args.colour,
+                colour=args.text,
                 players=players)
     game.run()
 
