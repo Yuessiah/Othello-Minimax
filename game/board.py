@@ -1,15 +1,15 @@
 from game.piece import Piece
 from game.settings import *
 
-__author__ = 'bengt'
+__author__ = 'bengt, yuessiah'
 
 
 class Board(object):
     """Board represents the current state of the Reversi board."""
 
     def __init__(self, colour):
-        self.width = 8
-        self.height = 8
+        self.width  = WIDTH
+        self.height = HEIGHT
         self.pieces = list((Piece(x, y, colour)
                             for y in range(0, self.height)
                             for x in range(0, self.width)))
@@ -135,7 +135,7 @@ class Board(object):
             if (tile >= 0) and (tile < WIDTH*HEIGHT):
                 while self.pieces[tile].get_state() != BOARD:
                     to_flip.append(self.pieces[tile])
-                    if self.outside_board(tile, d):
+                    if self.pieces[tile].get_state() == player or self.outside_board(tile, d):
                         break
                     else:
                         tile += d
