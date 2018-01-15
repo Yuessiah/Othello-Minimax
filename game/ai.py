@@ -2,7 +2,7 @@ import copy
 import datetime
 import sys
 
-__author__ = 'bengt'
+__author__ = 'bengt, yuessiah'
 
 from game.settings import *
 
@@ -16,9 +16,9 @@ class AlphaBetaPruner(object):
         self.move = 1
         self.white = 2
         self.black = 3
+        self.max_depth = 6
         self.duration = duration
         self.lifetime = None
-        self.infinity = 1.0e400
         self.first_player, self.second_player = (self.white, self.black) \
             if first_player == WHITE else (self.black, self.white)
         self.state = self.make_state(pieces)
@@ -35,9 +35,14 @@ class AlphaBetaPruner(object):
         """ Returns a valid action for the AI.
         """
         self.lifetime = datetime.datetime.now() + datetime.timedelta(seconds=self.duration)
-        depth = 0
-        fn = lambda action: self.min_value(depth, self.next_state(self.state, action), -self.infinity,
-                                           self.infinity)
+
+        num_of_piece = 64 - self.state[1].count(0)
+        if num_of_piece <= 18:
+            self.max_depth = 2
+        elif num_of_piece <= 36:
+            self.max_depth = 4
+
+        fn = lambda action: self.negamax(depth=0, state=self.next_state(self.state, action), alpha=-float('Inf'), beta=float('Inf'))
         maxfn = lambda value: value[0]
         actions = self.actions(self.state)
         moves = [(fn(action), action) for action in actions]
@@ -48,39 +53,21 @@ class AlphaBetaPruner(object):
         return max(moves, key=maxfn)[1]
 
 
-    def max_value(self, depth, current_state, alpha, beta):
-        """ Calculates the best possible move for the AI.
-        """
-        if self.cutoff_test(current_state, depth):
-            return self.evaluation(current_state, self.first_player)
-
-        value = -self.infinity
-
-        actions = self.actions(current_state)
-        for action in actions:
-            value = max([value, self.min_value(depth + 1, self.next_state(current_state, action), alpha, beta)])
-            if value >= beta:
-                return value
-            alpha = max(alpha, value)
-
-        return value
-
-
-    def min_value(self, depth, state, alpha, beta):
+    def negamax(self, depth, state, alpha, beta):
         """ Calculates the best possible move for the player.
         """
-        if self.cutoff_test(state, depth):
+        if self.cutoff_test(depth):
             return self.evaluation(state, self.second_player)
 
-        value = self.infinity
+        value = alpha
 
         actions = self.actions(state)
         for action in actions:
-            value = min([value, self.max_value(depth + 1, self.next_state(state, action), alpha, beta)])
-            if value <= alpha:
+            value = max([value, -self.negamax(depth + 1, self.next_state(state, action), -beta, -value)])
+            if value >= beta:
                 return value
-            beta = min([beta, value])
 
+        # print(depth, value)
         return value
 
 
@@ -94,36 +81,29 @@ class AlphaBetaPruner(object):
         opponent = self.opponent(player)
 
         # count_eval stands for the player with the most pieces next turn
-        moves = self.get_moves(player, opponent, state)
         player_pieces = len([p for p in state if p == player])
         opponent_pieces = len([p for p in state if p == opponent])
-        count_eval = 1 if player_pieces > opponent_pieces else \
-            0 if player_pieces == opponent_pieces else \
-                -1
+        count_eval = player_pieces - opponent_pieces
 
-        # moves_player    = moves
-        # moves_oppponent = self.get_moves(opponent, player, state)
-        # move_eval       = 1 if moves_player > moves_oppponent else \
-        #                   0 if moves_player == moves_oppponent else \
-        #                  -1
+        move_eval = -1 * len(self.get_moves(opponent, player, state))
 
         corners_player = (state[0] == player) + \
                          (state[7] == player) + \
                          (state[56] == player) + \
                          (state[63] == player)
-        corners_opponent = -1 * (state[0] == opponent) + \
+        corners_opponent = (state[0] == opponent) + \
                            (state[7] == opponent) + \
                            (state[56] == opponent) + \
                            (state[63] == opponent)
-        corners_eval = corners_player + corners_opponent
+        corners_eval = corners_player - corners_opponent
 
         edges_player = len([x for x in state if state == player and (state % 8 == 0 or state % 8 == 8)]) / (
             WIDTH * HEIGHT)
-        edges_opponent = -1 * len([x for x in state if state == opponent and (state % 8 == 0 or state % 8 == 8)]) / (
+        edges_opponent = len([x for x in state if state == opponent and (state % 8 == 0 or state % 8 == 8)]) / (
             WIDTH * HEIGHT)
-        edges_eval = edges_player + edges_opponent
+        edges_eval = edges_player - edges_opponent
 
-        eval = count_eval * 2 + corners_eval * 1.5 + edges_eval * 1.2
+        eval = count_eval * 120 + corners_eval * 5800 + edges_eval * 2200 + move_eval * 80
 
         return eval
 
@@ -199,7 +179,7 @@ class AlphaBetaPruner(object):
         return False, int(tile % WIDTH), int(tile / HEIGHT), tile
 
 
-    def cutoff_test(self, state, depth):
+    def cutoff_test(self, depth):
         """ Returns True when the cutoff limit has been reached.
         """
-        return depth > 1000 or datetime.datetime.now() > self.lifetime
+        return depth > self.max_depth or datetime.datetime.now() > self.lifetime
