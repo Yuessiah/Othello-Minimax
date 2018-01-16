@@ -6,8 +6,7 @@ import sys
 from game.ai import AlphaBetaPruner
 from game.brain import Brain
 from game.settings import *
-
-__author__ = 'bengt'
+__author__ = 'bengt, yuessiah'
 
 
 class Controller(object):
@@ -43,7 +42,7 @@ class PlayerController(Controller):
         """
         result = None
         while result is None:
-            event = input('Enter a coordinate, ex: c3, or Ctrl+D to quit: ')
+            event = input('Enter a coordinate: ')
             # if event[0] == '/':
             #     if event[1:] == 'quit' or event[1:] == 'q':
             #         print('Quitting. Thank you for playing.')
@@ -123,14 +122,14 @@ class AiController(Controller):
 
         threads.append(brain)
 
-        print('Brain is thinking ', end='')
+        print('Brain is thinking...', end='')
         update_step_duration = datetime.timedelta(microseconds=10000)
         goal_time = datetime.datetime.now() + update_step_duration
         accumulated_time = datetime.datetime.now()
 
         while workQueue.empty():
             if accumulated_time >= goal_time:
-                print('.', end='')
+                sys.stdout.write("\x1b7\x1b[%d;%dfDate: %s\x1b8" % (14, 22, datetime.datetime.now()))
                 goal_time = datetime.datetime.now() + update_step_duration
                 sys.stdout.flush()
 
@@ -151,7 +150,7 @@ class AiController(Controller):
 
 
     def __str__(self):
-        return "Ai"
+        return "AI"
 
 
     def __repr__(self):

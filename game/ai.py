@@ -16,8 +16,9 @@ class AlphaBetaPruner(object):
         self.move = 1
         self.white = 2
         self.black = 3
-        self.max_depth = 6
+        self.max_depth = 0
         self.duration = duration
+        self.complexity = 0
         self.lifetime = None
         self.first_player, self.second_player = (self.white, self.black) \
             if first_player == WHITE else (self.black, self.white)
@@ -37,27 +38,36 @@ class AlphaBetaPruner(object):
         self.lifetime = datetime.datetime.now() + datetime.timedelta(seconds=self.duration)
 
         num_of_piece = 64 - self.state[1].count(0)
-        if num_of_piece <= 18:
+        if num_of_piece <= 9:
             self.max_depth = 2
+        elif num_of_piece <= 18:
+            self.max_depth = 3
         elif num_of_piece <= 36:
             self.max_depth = 4
+        """
+        else:
+            self.max_depth = 5
+        """
 
         fn = lambda action: self.negamax(depth=0, state=self.next_state(self.state, action), alpha=-float('Inf'), beta=float('Inf'))
-        maxfn = lambda value: value[0]
         actions = self.actions(self.state)
         moves = [(fn(action), action) for action in actions]
 
         if len(moves) == 0:
             raise NoMovesError
 
-        return max(moves, key=maxfn)[1]
+        return max(moves, key=lambda value: value[0])[1]
 
 
     def negamax(self, depth, state, alpha, beta):
         """ Calculates the best possible move for the player.
         """
         if self.cutoff_test(depth):
-            return self.evaluation(state, self.second_player)
+            eval = self.evaluation(state, self.second_player)
+            sys.stdout.write("\x1b7\x1b[%d;%dfDepth: %d, Eval: %f\x1b8" % (12, 22, depth, eval))
+            self.complexity += 1
+            sys.stdout.write("\x1b7\x1b[%d;%dfComplexity: %d\x1b8" % (13, 22, self.complexity))
+            return eval
 
         value = alpha
 
@@ -67,7 +77,6 @@ class AlphaBetaPruner(object):
             if value >= beta:
                 return value
 
-        # print(depth, value)
         return value
 
 
@@ -103,7 +112,7 @@ class AlphaBetaPruner(object):
             WIDTH * HEIGHT)
         edges_eval = edges_player - edges_opponent
 
-        eval = count_eval * 120 + corners_eval * 5800 + edges_eval * 2200 + move_eval * 80
+        eval = count_eval * 120 + corners_eval * 6800 + edges_eval * 3200 + move_eval * 35
 
         return eval
 
@@ -182,4 +191,4 @@ class AlphaBetaPruner(object):
     def cutoff_test(self, depth):
         """ Returns True when the cutoff limit has been reached.
         """
-        return depth > self.max_depth or datetime.datetime.now() > self.lifetime
+        return depth >= self.max_depth or datetime.datetime.now() > self.lifetime

@@ -27,7 +27,7 @@ class Game(object):
         self.board.set_white(4, 4)
         self.board.set_white(3, 3)
         self.board.mark_moves(self.player)
-        self.previous_move = None
+        self.previous_move = [0, 0]
         self.previous_round_passed = False
 
 
@@ -51,6 +51,7 @@ class Game(object):
         self.player = self.ctrlers[0].get_colour()
         print("Playing as:       " + self.player)
         print("Current turn:     " + str(self.ctrlers[0]))
+        print("Previous move:    " + self.coordinate(self.previous_move))
         print("Number of Black:  " + str(
             len([p for p in self.board.pieces if p.get_state() == BLACK])))
         print("Number of White:  " + str(
@@ -97,13 +98,13 @@ class Game(object):
                     whites = len([p for p in self.board.pieces if p.get_state() == WHITE])
 
                     if blacks > whites:
-                        print("Black won this game.")
+                        print("BLACK won this game.")
                         exit()
                     elif blacks == whites:
                         print("This game was a tie.")
                         exit()
                     else:
-                        print("White won this game.")
+                        print("WHITE won this game.")
                         exit()
                 else:
                     self.previous_round_passed = True
