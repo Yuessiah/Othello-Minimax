@@ -63,7 +63,7 @@ class AlphaBetaPruner(object):
         """ Calculates the best possible move for the player.
         """
         if self.cutoff_test(depth):
-            eval = self.evaluation(state, self.second_player)
+            eval = self.evaluation(state, self.first_player)
             sys.stdout.write("\x1b7\x1b[%d;%dfDepth: %d, Eval: %f\x1b8" % (12, 22, depth, eval))
             self.complexity += 1
             sys.stdout.write("\x1b7\x1b[%d;%dfComplexity: %d\x1b8" % (13, 22, self.complexity))
