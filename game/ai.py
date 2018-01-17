@@ -83,34 +83,32 @@ class AlphaBetaPruner(object):
             Returns zero when there is a draw.
             Returns a negative value when the opponent wins."""
 
-        player = player_to_check
+        player   = player_to_check
         opponent = self.opponent(player)
+        edges_eval = mobility = corners_eval = 0
 
-        player_pieces = len([p for p in state if p == player])
+        player_pieces   = len([p for p in state if p == player  ])
         opponent_pieces = len([p for p in state if p == opponent])
-        count_eval = player_pieces - opponent_pieces
+        count_eval = (player_pieces - opponent_pieces) / (player_pieces + opponent_pieces)
 
-        move_eval = -1 * len(self.get_moves(opponent, state))
+        player_moves   = len(self.get_moves(player  , state))
+        opponent_moves = len(self.get_moves(opponent, state))
+        if player_moves + opponent_moves:
+            mobility = (player_moves - opponent_moves) / (player_moves + opponent_moves)
 
-        corners_player = (state[0] == player) + \
-                         (state[7] == player) + \
-                         (state[56] == player) + \
-                         (state[63] == player)
-        corners_opponent = (state[0] == opponent) + \
-                           (state[7] == opponent) + \
-                           (state[56] == opponent) + \
-                           (state[63] == opponent)
-        corners_eval = corners_player - corners_opponent
+        corners_player   = (state[0]  == player  ) + (state[7]  == player  ) + \
+                           (state[56] == player  ) + (state[63] == player  )
+        corners_opponent = (state[0]  == opponent) + (state[7]  == opponent) + \
+                           (state[56] == opponent) + (state[63] == opponent)
+        if corners_player + corners_opponent:
+            corners_eval = (corners_player - corners_opponent) / (corners_player + corners_opponent)
 
-        edges_player = len([x for x in state if state == player and (state % 8 == 0 or state % 8 == 8)]) / (
-            WIDTH * HEIGHT)
-        edges_opponent = len([x for x in state if state == opponent and (state % 8 == 0 or state % 8 == 8)]) / (
-            WIDTH * HEIGHT)
-        edges_eval = edges_player - edges_opponent
+        edges_player   = len([p for i, p in enumerate(state) if p == player   and (i%8==0 or i%8==7 or i/8==0 or i/8==7)])
+        edges_opponent = len([p for i, p in enumerate(state) if p == opponent and (i%8==0 or i%8==7 or i/8==0 or i/8==7)])
+        if edges_player + edges_opponent:
+            edges_eval = (edges_player - edges_opponent) / (edges_player + edges_opponent)
 
-        eval = count_eval * 120 + corners_eval * 6800 + edges_eval * 3200 + move_eval * 35
-
-        return eval
+        return count_eval * 60 + corners_eval * 380 + edges_eval * 175 + mobility * 160
 
 
     def opponent(self, player):
