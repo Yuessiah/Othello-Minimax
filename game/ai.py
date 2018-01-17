@@ -44,13 +44,11 @@ class AlphaBetaPruner(object):
             self.max_depth = 3
         elif num_of_piece <= 36:
             self.max_depth = 4
-        """
         else:
             self.max_depth = 5
-        """
 
         fn = lambda action: self.negamax(depth=0, state=self.next_state(self.state, action), alpha=-float('Inf'), beta=float('Inf'))
-        actions = self.actions(self.state)
+        actions = self.get_moves(self.state[0], self.state[1])
         moves = [(fn(action), action) for action in actions]
 
         if len(moves) == 0:
@@ -63,7 +61,7 @@ class AlphaBetaPruner(object):
         """ Calculates the best possible move for the player.
         """
         if self.cutoff_test(depth):
-            eval = self.evaluation(state, self.first_player)
+            eval = self.evaluation(state[1], self.first_player)
             sys.stdout.write("\x1b7\x1b[%d;%dfDepth: %d, Eval: %f\x1b8" % (12, 22, depth, eval))
             self.complexity += 1
             sys.stdout.write("\x1b7\x1b[%d;%dfComplexity: %d\x1b8" % (13, 22, self.complexity))
@@ -71,7 +69,7 @@ class AlphaBetaPruner(object):
 
         value = alpha
 
-        actions = self.actions(state)
+        actions = self.get_moves(state[0], state[1])
         for action in actions:
             value = max([value, -self.negamax(depth + 1, self.next_state(state, action), -beta, -value)])
             if value >= beta:
@@ -80,21 +78,19 @@ class AlphaBetaPruner(object):
         return value
 
 
-    def evaluation(self, current_state, player_to_check):
+    def evaluation(self, state, player_to_check):
         """ Returns a positive value when the player wins.
             Returns zero when there is a draw.
             Returns a negative value when the opponent wins."""
 
-        player_state, state = current_state
         player = player_to_check
         opponent = self.opponent(player)
 
-        # count_eval stands for the player with the most pieces next turn
         player_pieces = len([p for p in state if p == player])
         opponent_pieces = len([p for p in state if p == opponent])
         count_eval = player_pieces - opponent_pieces
 
-        move_eval = -1 * len(self.get_moves(opponent, player, state))
+        move_eval = -1 * len(self.get_moves(opponent, state))
 
         corners_player = (state[0] == player) + \
                          (state[7] == player) + \
@@ -117,14 +113,6 @@ class AlphaBetaPruner(object):
         return eval
 
 
-    def actions(self, current_state):
-        """ Returns a list of tuples as coordinates for the valid moves for the current player.
-        """
-        tmp_state = copy.deepcopy(current_state)
-        player, state = tmp_state
-        return self.get_moves(player, self.opponent(player), state)
-
-
     def opponent(self, player):
         """ Returns the opponent of the specified player.
         """
@@ -134,31 +122,30 @@ class AlphaBetaPruner(object):
     def next_state(self, current_state, action):
         """ Returns the next state in the form of a "current_state" tuple, (current_player, state).
         """
-        tmp_state = copy.deepcopy(current_state)
-        player, state = tmp_state
-        opponent = self.opponent(player)
+        placed = action[0] + (action[1] * WIDTH)
+        player = copy.copy(current_state[0])
+        state  = copy.copy(current_state[1])
 
-        xx, yy = action
-        state[xx + (yy * WIDTH)] = player
+        state[placed] = player
         for d in DIRECTIONS:
-            tile = xx + (yy * WIDTH) + d
-            if tile < 0 or tile >= 64:
+            if outside_board(placed, d):
                 continue
 
+            tile = placed + d
             while state[tile] != self.board:
-                state[tile] = player
-                tile += d
-                if tile < 0 or tile >= WIDTH * HEIGHT:
-                    tile -= d
+                if state[tile] == player or outside_board(tile, d):
                     break
+                else:
+                    state[tile] = player
+                    tile += d
 
-        return opponent, state
+        return self.opponent(player), state
 
 
-    def get_moves(self, player, opponent, state):
+    def get_moves(self, player, state):
         """ Returns a generator of (x,y) coordinates.
         """
-        moves = [self.mark_move(player, opponent, tile, state, d)
+        moves = [self.mark_move(player, self.opponent(player), tile, state, d)
                  for tile in range(WIDTH * HEIGHT)
                  for d in DIRECTIONS
                  if not outside_board(tile, d) and state[tile] == player]
