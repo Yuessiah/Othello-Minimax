@@ -46,10 +46,10 @@ class AlphaBetaPruner(object):
             self.max_depth = 5
         sys.stdout.write("\x1b7\x1b[%d;%dfMax depth: %d\x1b8" % (10, 22, self.max_depth))
 
-        fn = lambda next_action: self.opening_evaluation(next_action[1], self.first_player) + \
-                self.negamax(0, next_action, -float('Inf'), float('Inf'))
+        fn = lambda state, action: self.opening_evaluation(state[1], action) + \
+                self.negamax(0, state, -float('Inf'), float('Inf'))
         actions = self.get_moves(self.state[0], self.state[1])
-        moves = [(fn(self.next_state(self.state, action)), action) for action in actions]
+        moves = [(fn(self.next_state(self.state, action), action), action) for action in actions]
 
         if len(moves) == 0:
             raise NoMovesError
@@ -62,6 +62,7 @@ class AlphaBetaPruner(object):
             eval = self.ending_evaluation(state[1], self.first_player)
             self.complexity += 1
             sys.stdout.write("\x1b7\x1b[%d;%dfComplexity: %d\x1b8" % (13, 22, self.complexity))
+            sys.stdout.flush()
             return eval
 
         value = alpha
@@ -73,32 +74,36 @@ class AlphaBetaPruner(object):
 
         return value
 
-    def opening_evaluation(self, state, player_to_check):
+    def opening_evaluation(self, state, action):
         board  = self.board
-        player = player_to_check
+        placed = action[0] + (action[1] * WIDTH)
 
-        X = (state[0]  == board and state[9]  == player) or \
-            (state[7]  == board and state[14] == player) or \
-            (state[56] == board and state[49] == player) or \
-            (state[63] == board and state[54] == player)
+        X = (state[0]  == board and placed == 9 ) or \
+            (state[7]  == board and placed == 14) or \
+            (state[56] == board and placed == 49) or \
+            (state[63] == board and placed == 54)
 
-        C = (state[0]  == board and (state[1]  == player or state[8]  == player)) or \
-            (state[7]  == board and (state[6]  == player or state[15] == player)) or \
-            (state[56] == board and (state[48] == player or state[57] == player)) or \
-            (state[63] == board and (state[55] == player or state[62] == player))
+        C = (state[0]  == board and (placed == 1  or placed == 8 )) or \
+            (state[7]  == board and (placed == 6  or placed == 15)) or \
+            (state[56] == board and (placed == 48 or placed == 57)) or \
+            (state[63] == board and (placed == 55 or placed == 62))
+
+        count = [1]
+        parity = 1 if self.parity(0, copy.copy(state), placed, count) else -1 #odd: 1, even: -1
 
         if state.count(0) <= 16:
-            eval = (X*-220) + (C*-115)
+            eval = (X*-320) + (C*-215) + (parity*420)
         else:
-            eval = (X*-356) + (C*-215)
+            eval = (X*-456) + (C*-315) + (parity*400)
         sys.stdout.write("\x1b7\x1b[%d;%dfOpening eval: %d\x1b8" % (11, 22, eval))
         return eval
 
 
     def ending_evaluation(self, state, player_to_check):
+        board    = self.board
         player   = player_to_check
         opponent = self.opponent(player)
-        edge_eval = mobility = corner_eval = 0
+        edge_eval = mobility = corner_eval = stability_eval = player_stability = opponent_stability = 0
 
         player_piece   = len([p for p in state if p == player  ])
         opponent_piece = len([p for p in state if p == opponent])
@@ -121,16 +126,48 @@ class AlphaBetaPruner(object):
         if edge_player + edge_opponent:
             edge_eval = (edge_player - edge_opponent) / (edge_player + edge_opponent)
 
-        if state.count(0) <= 8:
-            eval = (count_eval*160) + (corner_eval*155) + (edge_eval*110) + (mobility*140)
+        for tile, colour in enumerate(state):
+            if colour is not board:
+                ok = True
+                for d in DIRECTIONS:
+                    if outside_board(tile, d):
+                        continue
+                    if state[tile+d] is board:
+                        ok = False
+                        break
+                if ok:
+                    if colour == player:
+                        player_stability += 1
+                    else:
+                        opponent_stability += 1
+        if player_stability + opponent_stability:
+            stability_eval = (player_stability - opponent_stability) / (player_stability + opponent_stability)
+
+        if state.count(0) <= 16:
+            eval = (count_eval*120) + (corner_eval*155) + (edge_eval*110) + (mobility*140) + (stability_eval*150)
         else:
-            eval = (count_eval*100) + (corner_eval*185) + (edge_eval*155) + (mobility*165)
+            eval = (count_eval*100) + (corner_eval*185) + (edge_eval*155) + (mobility*165) + (stability_eval*130)
+        if state.count(0) <= 6:
+            eval += count_eval*100
         sys.stdout.write("\x1b7\x1b[%d;%dfEnding eval: %f\x1b8" % (12, 22, eval))
         return eval
 
 
     def opponent(self, player):
         return self.second_player if player is self.first_player else self.first_player
+
+
+    def parity(self, depth, state, placed, count):
+        for d in DIRECTIONS:
+            if outside_board(placed, d):
+                continue
+            if state[placed+d] == self.board:
+                count[0] += 1
+                state[placed+d] = 1 #visited
+                self.parity(depth + 1, state, placed+d, count)
+
+        if depth == 0:
+            return count[0] % 2
 
 
     def next_state(self, current_state, action):
