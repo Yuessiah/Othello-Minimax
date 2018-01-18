@@ -33,8 +33,6 @@ class AlphaBetaPruner(object):
 
 
     def alpha_beta_search(self):
-        """ Returns a valid action for the AI.
-        """
         self.lifetime = datetime.datetime.now() + datetime.timedelta(seconds=self.duration)
 
         num_of_piece = 64 - self.state[1].count(0)
@@ -46,10 +44,12 @@ class AlphaBetaPruner(object):
             self.max_depth = 4
         else:
             self.max_depth = 5
+        sys.stdout.write("\x1b7\x1b[%d;%dfMax depth: %d\x1b8" % (10, 22, self.max_depth))
 
-        fn = lambda action: self.negamax(depth=0, state=self.next_state(self.state, action), alpha=-float('Inf'), beta=float('Inf'))
+        fn = lambda next_action: self.opening_evaluation(next_action[1], self.first_player) + \
+                self.negamax(0, next_action, -float('Inf'), float('Inf'))
         actions = self.get_moves(self.state[0], self.state[1])
-        moves = [(fn(action), action) for action in actions]
+        moves = [(fn(self.next_state(self.state, action)), action) for action in actions]
 
         if len(moves) == 0:
             raise NoMovesError
@@ -58,17 +58,13 @@ class AlphaBetaPruner(object):
 
 
     def negamax(self, depth, state, alpha, beta):
-        """ Calculates the best possible move for the player.
-        """
         if self.cutoff_test(depth):
-            eval = self.evaluation(state[1], self.first_player)
-            sys.stdout.write("\x1b7\x1b[%d;%dfDepth: %d, Eval: %f\x1b8" % (12, 22, depth, eval))
+            eval = self.ending_evaluation(state[1], self.first_player)
             self.complexity += 1
             sys.stdout.write("\x1b7\x1b[%d;%dfComplexity: %d\x1b8" % (13, 22, self.complexity))
             return eval
 
         value = alpha
-
         actions = self.get_moves(state[0], state[1])
         for action in actions:
             value = max([value, -self.negamax(depth + 1, self.next_state(state, action), -beta, -value)])
@@ -77,43 +73,63 @@ class AlphaBetaPruner(object):
 
         return value
 
+    def opening_evaluation(self, state, player_to_check):
+        board  = self.board
+        player = player_to_check
 
-    def evaluation(self, state, player_to_check):
-        """ Returns a positive value when the player wins.
-            Returns zero when there is a draw.
-            Returns a negative value when the opponent wins."""
+        X = (state[0]  == board and state[9]  == player) or \
+            (state[7]  == board and state[14] == player) or \
+            (state[56] == board and state[49] == player) or \
+            (state[63] == board and state[54] == player)
 
+        C = (state[0]  == board and (state[1]  == player or state[8]  == player)) or \
+            (state[7]  == board and (state[6]  == player or state[15] == player)) or \
+            (state[56] == board and (state[48] == player or state[57] == player)) or \
+            (state[63] == board and (state[55] == player or state[62] == player))
+
+        if state.count(0) <= 16:
+            eval = (X*-220) + (C*-115)
+        else:
+            eval = (X*-356) + (C*-215)
+        sys.stdout.write("\x1b7\x1b[%d;%dfOpening eval: %d\x1b8" % (11, 22, eval))
+        return eval
+
+
+    def ending_evaluation(self, state, player_to_check):
         player   = player_to_check
         opponent = self.opponent(player)
-        edges_eval = mobility = corners_eval = 0
+        edge_eval = mobility = corner_eval = 0
 
-        player_pieces   = len([p for p in state if p == player  ])
-        opponent_pieces = len([p for p in state if p == opponent])
-        count_eval = (player_pieces - opponent_pieces) / (player_pieces + opponent_pieces)
+        player_piece   = len([p for p in state if p == player  ])
+        opponent_piece = len([p for p in state if p == opponent])
+        count_eval = (player_piece - opponent_piece) / (player_piece + opponent_piece)
 
-        player_moves   = len(self.get_moves(player  , state))
-        opponent_moves = len(self.get_moves(opponent, state))
-        if player_moves + opponent_moves:
-            mobility = (player_moves - opponent_moves) / (player_moves + opponent_moves)
+        player_move   = len(self.get_moves(player  , state))
+        opponent_move = len(self.get_moves(opponent, state))
+        if player_move + opponent_move:
+            mobility = (player_move - opponent_move) / (player_move + opponent_move)
 
-        corners_player   = (state[0]  == player  ) + (state[7]  == player  ) + \
-                           (state[56] == player  ) + (state[63] == player  )
-        corners_opponent = (state[0]  == opponent) + (state[7]  == opponent) + \
-                           (state[56] == opponent) + (state[63] == opponent)
-        if corners_player + corners_opponent:
-            corners_eval = (corners_player - corners_opponent) / (corners_player + corners_opponent)
+        corner_player   = (state[0]  == player  ) + (state[7]  == player  ) + \
+                          (state[56] == player  ) + (state[63] == player  )
+        corner_opponent = (state[0]  == opponent) + (state[7]  == opponent) + \
+                          (state[56] == opponent) + (state[63] == opponent)
+        if corner_player + corner_opponent:
+            corner_eval = (corner_player - corner_opponent) / (corner_player + corner_opponent)
 
-        edges_player   = len([p for i, p in enumerate(state) if p == player   and (i%8==0 or i%8==7 or i/8==0 or i/8==7)])
-        edges_opponent = len([p for i, p in enumerate(state) if p == opponent and (i%8==0 or i%8==7 or i/8==0 or i/8==7)])
-        if edges_player + edges_opponent:
-            edges_eval = (edges_player - edges_opponent) / (edges_player + edges_opponent)
+        edge_player   = len([p for i, p in enumerate(state) if p == player   and (i%8==0 or i%8==7 or i/8==0 or i/8==7)])
+        edge_opponent = len([p for i, p in enumerate(state) if p == opponent and (i%8==0 or i%8==7 or i/8==0 or i/8==7)])
+        if edge_player + edge_opponent:
+            edge_eval = (edge_player - edge_opponent) / (edge_player + edge_opponent)
 
-        return count_eval * 60 + corners_eval * 380 + edges_eval * 175 + mobility * 160
+        if state.count(0) <= 8:
+            eval = (count_eval*160) + (corner_eval*155) + (edge_eval*110) + (mobility*140)
+        else:
+            eval = (count_eval*100) + (corner_eval*185) + (edge_eval*155) + (mobility*165)
+        sys.stdout.write("\x1b7\x1b[%d;%dfEnding eval: %f\x1b8" % (12, 22, eval))
+        return eval
 
 
     def opponent(self, player):
-        """ Returns the opponent of the specified player.
-        """
         return self.second_player if player is self.first_player else self.first_player
 
 
