@@ -160,36 +160,28 @@ class AlphaBetaPruner(object):
         """ Returns a generator of (x,y) coordinates.
         """
         moves = [self.mark_move(player, self.opponent(player), tile, state, d)
-                 for tile in range(WIDTH * HEIGHT)
+                 for tile, colour in enumerate(state)
                  for d in DIRECTIONS
-                 if not outside_board(tile, d) and state[tile] == player]
+                 if colour == player and not outside_board(tile, d)]
 
-        return [(x, y) for found, x, y, tile in moves if found]
+        return list(set([(x, y) for found, x, y in moves if found]))
 
 
     def mark_move(self, player, opponent, tile, pieces, direction):
         """ Returns True whether the current tile piece is a move for the current player,
             otherwise it returns False.
         """
-        if not outside_board(tile, direction):
-            tile += direction
-        else:
-            return False, int(tile % WIDTH), int(tile / HEIGHT), tile
+        tile += direction
 
         if pieces[tile] == opponent:
-            while pieces[tile] == opponent:
-                if outside_board(tile, direction):
-                    break
-                else:
-                    tile += direction
+            while pieces[tile] == opponent and not outside_board(tile, direction):
+                tile += direction
 
             if pieces[tile] == self.board:
-                return True, int(tile % WIDTH), int(tile / HEIGHT), tile
+                return True, int(tile%WIDTH), int(tile/HEIGHT)
 
-        return False, int(tile % WIDTH), int(tile / HEIGHT), tile
+        return False, int(tile%WIDTH), int(tile/HEIGHT)
 
 
     def cutoff_test(self, depth):
-        """ Returns True when the cutoff limit has been reached.
-        """
         return depth >= self.max_depth or datetime.datetime.now() > self.lifetime
