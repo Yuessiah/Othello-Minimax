@@ -46,29 +46,29 @@ class AlphaBetaPruner(object):
             self.max_depth = 5
         sys.stdout.write("\x1b7\x1b[%d;%dfMax depth: %d\x1b8" % (10, 22, self.max_depth))
 
-        fn = lambda state, action: self.opening_evaluation(state[1], action) + \
-                self.negamax(0, state, -float('Inf'), float('Inf'))
-        actions = self.get_moves(self.state[0], self.state[1])
-        moves = [(fn(self.next_state(self.state, action), action), action) for action in actions]
-
+        moves = self.get_moves(self.state[0], self.state[1])
         if len(moves) == 0:
             raise NoMovesError
 
-        return max(moves, key=lambda value: value[0])[1]
+        fn = lambda state, move: self.opening_evaluation(state[1], move) + \
+                self.negamax(0, state, move, -float('Inf'), float('Inf'))
+        scores = [(fn(self.next_state(self.state, move), move), move) for move in moves]
+
+        return max(scores, key=lambda value: value[0])[1]
 
 
-    def negamax(self, depth, state, alpha, beta):
+    def negamax(self, depth, state, action, alpha, beta):
         if self.cutoff_test(depth):
-            eval = self.ending_evaluation(state[1], self.first_player)
+            eval = self.ending_evaluation(state[1], self.first_player, action)
             self.complexity += 1
             sys.stdout.write("\x1b7\x1b[%d;%dfComplexity: %d\x1b8" % (13, 22, self.complexity))
             sys.stdout.flush()
             return eval
 
         value = alpha
-        actions = self.get_moves(state[0], state[1])
-        for action in actions:
-            value = max([value, -self.negamax(depth + 1, self.next_state(state, action), -beta, -value)])
+        moves = self.get_moves(state[0], state[1])
+        for move in moves:
+            value = max([value, -self.negamax(depth + 1, self.next_state(state, move), move, -beta, -value)])
             if value >= beta:
                 return value
 
@@ -89,17 +89,17 @@ class AlphaBetaPruner(object):
             (state[63] == board and (placed == 55 or placed == 62))
 
         count = [1]
-        parity = 1 if self.parity(0, copy.copy(state), placed, count) else -1 #odd: 1, even: -1
+        parity = 1 if self.parity(0, copy.copy(state), placed, count) else -0.75 #odd: 1, even: -0.75
 
         if state.count(0) <= 16:
-            eval = (X*-320) + (C*-215) + (parity*420)
+            eval = (X*-320) + (C*-215) + (parity*320)
         else:
-            eval = (X*-456) + (C*-315) + (parity*400)
-        sys.stdout.write("\x1b7\x1b[%d;%dfOpening eval: %d\x1b8" % (11, 22, eval))
+            eval = (X*-456) + (C*-315) + (parity*300)
+        sys.stdout.write("\x1b7\x1b[%d;%dfOpening eval: %f\x1b8" % (11, 22, eval))
         return eval
 
 
-    def ending_evaluation(self, state, player_to_check):
+    def ending_evaluation(self, state, player_to_check, action):
         board    = self.board
         player   = player_to_check
         opponent = self.opponent(player)
@@ -110,7 +110,7 @@ class AlphaBetaPruner(object):
         count_eval = (player_piece - opponent_piece) / (player_piece + opponent_piece)
 
         player_move   = len(self.get_moves(player  , state))
-        opponent_move = len(self.get_moves(opponent, state))
+        opponent_move = len(self.get_moves(opponent, self.next_state((player, state), action)[1]))
         if player_move + opponent_move:
             mobility = (player_move - opponent_move) / (player_move + opponent_move)
 
