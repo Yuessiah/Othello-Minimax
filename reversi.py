@@ -5,12 +5,9 @@ from game.game import Game
 
 
 def main():
-    """ Reversi game with human player vs AI player.
-    """
-
     parser = argparse.ArgumentParser()
     parser.add_argument('--timeout', help="Number of seconds the brain is allowed to think before making its move",
-                        type=int, default=1)
+                        type=int, default=86400)
     parser.add_argument('--text', help="Display the game in text mode", action='store_false')
     parser.add_argument('--player', help="Player first", action='store_true')
     parser.add_argument('--ai', help="AI first", action='store_true')
@@ -18,7 +15,7 @@ def main():
 
     args = parser.parse_args()
 
-    if args.timeout < 0:
+    if args.timeout <= 0:
         exit()
 
     players=['player', 'player']
@@ -29,9 +26,7 @@ def main():
     elif args.verify:
         players = ['ai', 'random']
 
-    game = Game(timeout=args.timeout,
-                colour=args.text,
-                players=players)
+    game = Game(args.timeout, players, args.text)
     game.run()
 
 
