@@ -79,18 +79,9 @@ class AlphaBetaPruner(object):
             (state[56] == board and (placed == 48 or placed == 57)) or \
             (state[63] == board and (placed == 55 or placed == 62))
 
-        parity = 1 if self.parity(0, copy.copy(state), placed, parity_count) else -0.75 #odd: 1, even: -0.75
+        parity = 1 if self.parity(0, copy.copy(state), placed, parity_count) else -0.45 #odd: 1, even: -0.45
 
-        if state.count(board) <= 16:
-            eval = (X*-320) + (C*-215)
-        else:
-            eval = (X*-456) + (C*-315)
-
-        if parity_count[0] > 7:
-            eval += parity * 110
-        else:
-            eval += parity * 365
-
+        eval = (X*-50) + (C*-20) + (parity*100)
         sys.stdout.write("\x1b7\x1b[%d;%dfOpening eval: %f\x1b8" % (11, 22, eval))
         return eval
 
@@ -126,17 +117,7 @@ class AlphaBetaPruner(object):
         if player_stability + opponent_stability:
             stability_eval = (player_stability - opponent_stability) / (player_stability + opponent_stability)
 
-        left = state.count(board)
-        if left <= 18:
-            eval = (count_eval*120) + (corner_eval*145) + (edge_eval*130) + (mobility*240) + (stability_eval*195)
-        elif left <= 48:
-            eval = (count_eval*100) + (corner_eval*185) + (edge_eval*100) + (mobility*165) + (stability_eval*185)
-        else:
-            eval = (count_eval*50)  + (corner_eval*115) + (edge_eval*150) + (mobility*115) + (stability_eval*285)
-
-        if state.count(board) <= 7: #TODO: brute force
-            eval += count_eval*370
-
+        eval = (count_eval*100)  + (corner_eval*100) + (edge_eval*100) + (mobility*100) + (stability_eval*100)
         sys.stdout.write("\x1b7\x1b[%d;%dfEnding eval: %f\x1b8" % (12, 22, eval))
         return eval
 
