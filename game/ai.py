@@ -30,8 +30,8 @@ class AlphaBetaPruner(object):
     def alpha_beta_search(self):
         self.lifetime = datetime.datetime.now() + datetime.timedelta(seconds=self.duration)
 
-        num_of_piece = 64 - self.state[0].count(self.board)
-        if num_of_piece <= 18:
+        left = self.state[0].count(self.board)
+        if left >= 44:
             self.max_depth = 4
         else:
             self.max_depth = 5
@@ -98,7 +98,7 @@ class AlphaBetaPruner(object):
         board    = self.board
         player   = player_to_check
         opponent = self.opponent(player)
-        edge_eval = mobility = corner_eval = stability_eval = player_stability = opponent_stability = 0
+        edge_eval = mobility = corner_eval = stability_eval = 0
 
         player_piece   = len([p for p in state if p == player  ])
         opponent_piece = len([p for p in state if p == opponent])
@@ -121,30 +121,21 @@ class AlphaBetaPruner(object):
         if edge_player + edge_opponent:
             edge_eval = (edge_player - edge_opponent) / (edge_player + edge_opponent)
 
-        for tile, colour in enumerate(state):
-            if colour is not board:
-                ok = True
-                for d in DIRECTIONS:
-                    if outside_board(tile, d):
-                        continue
-                    if state[tile+d] is board:
-                        ok = False
-                        break
-                if ok:
-                    if colour == player:
-                        player_stability += 1
-                    else:
-                        opponent_stability += 1
+        player_stability   = self.stability(state, player, opponent)
+        opponent_stability = self.stability(self.next_state((state, player), action)[0], opponent, player)
         if player_stability + opponent_stability:
             stability_eval = (player_stability - opponent_stability) / (player_stability + opponent_stability)
 
-        if state.count(board) <= 16:
-            eval = (count_eval*120) + (corner_eval*155) + (edge_eval*110) + (mobility*170) + (stability_eval*145)
+        left = state.count(board)
+        if left <= 18:
+            eval = (count_eval*120) + (corner_eval*145) + (edge_eval*130) + (mobility*240) + (stability_eval*195)
+        elif left <= 48:
+            eval = (count_eval*100) + (corner_eval*185) + (edge_eval*100) + (mobility*165) + (stability_eval*185)
         else:
-            eval = (corner_eval*185) + (edge_eval*155) + (mobility*215) + (stability_eval*125)
+            eval = (count_eval*50)  + (corner_eval*115) + (edge_eval*150) + (mobility*115) + (stability_eval*285)
 
-        if state.count(board) <= 8: #TODO: brute force
-            eval += count_eval*1000
+        if state.count(board) <= 7: #TODO: brute force
+            eval += count_eval*370
 
         sys.stdout.write("\x1b7\x1b[%d;%dfEnding eval: %f\x1b8" % (12, 22, eval))
         return eval
@@ -164,9 +155,29 @@ class AlphaBetaPruner(object):
         if depth == 0:
             return count[0] % 2
 
+    def stability(self, state, player, opponent):
+        bad_piece = set()
+
+        for piece, colour in enumerate(state):
+            if colour != opponent:
+                continue
+
+            for d in DIRECTIONS:
+                if outside_board(piece, d):
+                    continue
+
+                to_store = set()
+                tile = piece + d
+                while state[tile] == player and not outside_board(tile, d):
+                    to_store.add((int(tile%WIDTH), int(tile/HEIGHT)))
+                    tile += d
+
+                if state[tile] == self.board:
+                    bad_piece.update(to_store)
+
+        return state.count(player) - len(bad_piece)
+
     def next_state(self, current_state, action):
-        """ Returns the next state in the form of a "current_state" tuple, (current_player, state).
-        """
         placed   = action[0] + (action[1] * WIDTH)
         state    = copy.copy(current_state[0])
         player   = copy.copy(current_state[1])
