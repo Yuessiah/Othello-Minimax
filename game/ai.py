@@ -112,11 +112,9 @@ class AlphaBetaPruner(object):
                            (state[63] == opponent)
         corners_eval = corners_player + corners_opponent
 
-        edges_player = len([x for x in state if state == player and (state % 8 == 0 or state % 8 == 8)]) / (
-            WIDTH * HEIGHT)
-        edges_opponent = -1 * len([x for x in state if state == opponent and (state % 8 == 0 or state % 8 == 8)]) / (
-            WIDTH * HEIGHT)
-        edges_eval = edges_player + edges_opponent
+        edges_player   = len([p for i, p in enumerate(state) if p == player   and (i%8==0 or i%8==7 or i/8==0 or i/8==7)])
+        edges_opponent = len([p for i, p in enumerate(state) if p == opponent and (i%8==0 or i%8==7 or i/8==0 or i/8==7)])
+        edges_eval = edges_player - edges_opponent
 
         eval = count_eval * 2 + corners_eval * 1.5 + edges_eval * 1.2
 
